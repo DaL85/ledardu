@@ -20,13 +20,15 @@ class ledcontrol
     void set_button_ausdimmen(boolean v);
     void set_period_on(int v);
     void set_period_off(int v);
-//    int get_dimonSs
-//    int get_Eh
-//    int get_
-//    int get_
+    void set_valuered(int v);
+    void set_valueblue(int v);
+    void set_valuegreen(int v);
+
 
   private:
+    void calculateAnWriteLedValues(int currentRatio);
     int pinred, pingreen, pinblue; 
+    int valuered, valueblue, valuegreen;
     int dimonSh ,dimonSm ,dimonSs, Eh, Em, Es;
     int Sh_settime, Sm_settime, Ss_settime;
     boolean button_ausdimmen,ausdimmen_aktiv,andimmen_aktiv,dimon_finished;

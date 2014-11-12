@@ -15,9 +15,7 @@ boolean ledcontrol::get_andimmen_aktiv(){
 boolean ledcontrol::get_ausdimmen_aktiv(){
   return ausdimmen_aktiv;
 }
-//boolean ledcontrol::get_dimon_finished(){
-//  return dimon_finished;
-//}
+
 int ledcontrol::get_dimonSh(){
   return dimonSh;
 }
@@ -38,6 +36,27 @@ void ledcontrol::set_period_on(int v){
 }
 void ledcontrol::set_period_off(int v){
   period_off=v;
+}
+void ledcontrol::set_valuered(int v){
+  valuered=v;
+}
+void ledcontrol::set_valueblue(int v){
+  valueblue=v;
+}
+void ledcontrol::set_valuegreen(int v){
+  valuegreen=v;
+}
+void ledcontrol::calculateAnWriteLedValues(int currentRatio){
+  int valueall = valuegreen+valuered+valueblue;
+ 
+  int dimValueRed=(int)(currentRatio*((double)valuered/valueall));
+  int dimValueBlue=(int)(currentRatio*((double)valueblue/valueall));
+  int dimValueGreen=(int)(currentRatio*((double)valuegreen/valueall));
+ 
+  analogWrite(pinred, dimValueRed);
+  analogWrite(pinblue, dimValueBlue);
+  analogWrite(pingreen, dimValueGreen);
+  
 }
 void ledcontrol::set_dimtime(int starthour, int startminute, int startsecond)
 {
@@ -78,8 +97,7 @@ int ledcontrol::execute_dim_on(int currenthour, int currentminute, int currentse
   int cs_calc = currentsecond-Ss_settime;
   int timerange=(eh_calc*3600)+em_calc*60; //+es_calc=es-ss=0      ->die gesamte Zeitspanne
   int curr_timerange=(ch_calc*3600)+cm_calc*60+cs_calc;                //-> die bisher verstrichene Zeitspanne
-//   Serial.println("timerange:"+String(timerange));
-//   Serial.println("curr_timerange:"+String(curr_timerange));
+
   int setvalue_all=255;
   if(timerange!=0)
   {
@@ -94,31 +112,20 @@ int ledcontrol::execute_dim_on(int currenthour, int currentminute, int currentse
   }
  
   Serial.println("setvalue_all: "+String(setvalue_all));
-  analogWrite(pinred, setvalue_all);
-  analogWrite(pingreen, setvalue_all);
-  analogWrite(pinblue, setvalue_all); 
-}  
+  calculateAnWriteLedValues(setvalue_all);
+}
+
 int ledcontrol::execute_dim_off(int currenthour, int currentminute, int currentsecond)
 {
-		
-	  /*Serial.println("funktion ledausdimmen_durchfuehren");
-	   Serial.println("eh:"+String(eh));
-		Serial.println("em:"+String(em));
-		Serial.println("ch:"+String(ch));
-		Serial.println("cm:"+String(cm));*/
   int eh_calc = Eh-Sh_settime;  
   int em_calc = Em-Sm_settime;
   int ch_calc = currenthour-Sh_settime;
   int cm_calc = currentminute-Sm_settime;
   int cs_calc = currentsecond-Ss_settime;
-		 /*Serial.println("eh_calc:"+String(eh_calc));
-		  Serial.println("em_calc:"+String(em_calc));
-		  Serial.println("ch_calc:"+String(ch_calc));
-		  Serial.println("cm_calc:"+String(cm_calc));*/
+		 
   int timerange=(eh_calc*3600)+em_calc*60;
   int curr_timerange=(ch_calc*3600)+cm_calc*60+cs_calc;
-	   /*Serial.println("timerange:"+String(timerange));
-	   Serial.println("curr_timerange:"+String(curr_timerange));*/
+	  
   int setvalue_all=(int)(255-((double)curr_timerange/(double)timerange)*255);
   if(setvalue_all<=0||setvalue_all>255)
   {

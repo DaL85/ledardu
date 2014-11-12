@@ -11,8 +11,8 @@
 String cmd;
 String value;
 int valuered, valueblue, valuegreen;
-boolean Kommandostart=false;
-boolean Valuestart=false;
+boolean cmdStart=false;
+boolean valueStart=false;
 int ledpin = 13; // LED connected to pin 48 (on-board LED)
 int ledgreen = 9;
 int ledred = 10;
@@ -33,39 +33,14 @@ void loop()
 {
   if(fragment == "automatik" )
   {
-    if(durchlauf>10000)// verhindert überlastung durch unnötige Berechngung
-    {  
-      durchlauf=0;
-    }    
-    durchlauf++;
-    //Beispielstring: #red_255;
-    if(durchlauf<=1)
-    {    
-       if (RTC.read(tm)) //Auslesen der RTC
-       {
-        Serial.print("Ok, Time = ");
-        Serial.print(tm.Hour);
-        Serial.write(':');
-        Serial.print(tm.Minute);
-        Serial.write(':');
-        Serial.print(tm.Second);
-        Serial.println();
-        if(ls.get_andimmen_aktiv())//Zeit in ledandimmen wurde gesetzt, hier andimmen des Lichtes (abfrage der verbleibenden Zeit -> Steuern der Helligkeit)
-        {
-          ls.execute_dim_on(tm.Hour,tm.Minute, tm.Second);
-        }
-        else if(ls.get_ausdimmen_aktiv())
-        {
-          ls.execute_dim_off(tm.Hour,tm.Minute, tm.Second);
-        }
-        else if((tm.Hour==ls.get_dimonSh()&&tm.Minute==ls.get_dimonSm())|| ls.get_button_ausdimmen() )
-        {
-          ls.set_dimtime(tm.Hour, tm.Minute, tm.Second);
-        } 
-      } 
-    }
+    readCurrentTimeAndControlDim();
   }
+  
+  readSeriellInputAndExecuteCommand();  
+}
 
+void readSeriellInputAndExecuteCommand()
+{
   char nextChar;  
     
   if (Serial.available() > 0) 
@@ -73,11 +48,11 @@ void loop()
     nextChar = Serial.read();
      if( nextChar == '#' ) //Kommando start
     {
-      Kommandostart=true;
+      cmdStart=true;
     }
     else
     {    
-      if( Kommandostart )
+      if( cmdStart )
       {            
         if( nextChar == ';' ) //Kommando vollständig
         {          
@@ -98,7 +73,7 @@ void loop()
           }
           else if ( cmd == "time" )
           {
-            time(value);
+            setTime(value);
           }
           else if ( cmd == "tan" )
           {                
@@ -129,16 +104,16 @@ void loop()
           }
           cmd = "";
           value = "";
-          Kommandostart = false;    //Rücksetzen des Startkommandos
-          Valuestart = false;
+          cmdStart = false;    //Rücksetzen des Startkommandos
+          valueStart = false;
         }
         else 
         {
           if( nextChar == '_' )
           {
-            Valuestart=true;
+            valueStart=true;
           }
-          else if ( !Valuestart )  //Teilstring noch im Kommandobereich
+          else if ( !valueStart )  //Teilstring noch im Kommandobereich
           {
             cmd += nextChar;
           } 
@@ -158,6 +133,10 @@ void setred()
   {
     analogWrite(ledred, valuered);
   }
+  else if (fragment == "automatik")
+  {
+    ls.set_valuered(valuered);
+  }
 }
 
 void setgreen()
@@ -165,6 +144,10 @@ void setgreen()
   if(fragment == "manuell")
   {
     analogWrite(ledgreen, valuegreen);
+  }
+  else if (fragment == "automatik")
+  {
+    ls.set_valuegreen(valuegreen);
   }
 }
 
@@ -174,13 +157,50 @@ void setblue()
   {
     analogWrite(ledblue, valueblue);
   }
+  else if (fragment == "automatik")
+  {
+    ls.set_valueblue(valueblue);
+  }
 }
 
-void time(String t) //die übergebene Zeit wird aufgeteilt und an das RTC gesendet
+void readCurrentTimeAndControlDim()
 {
-  Serial.println("funktion time");
-  tmElements_t tms;
+  if(durchlauf>10000)// verhindert überlastung durch unnötige Berechngung
+    {  
+      durchlauf=0;
+    }    
+    durchlauf++;
+    //Beispielstring: #red_255;
+    if(durchlauf<=1)
+    {    
+       if (RTC.read(tm)) //Auslesen der RTC
+       {
+        Serial.print("Ok, Time = ");
+        Serial.print(tm.Hour);
+        Serial.write(':');
+        Serial.print(tm.Minute);
+        Serial.write(':');
+        Serial.print(tm.Second);
+        Serial.println();
+        if(ls.get_andimmen_aktiv())//Zeit in ledandimmen wurde gesetzt, hier andimmen des Lichtes (abfrage der verbleibenden Zeit -> Steuern der Helligkeit)
+        {
+          ls.execute_dim_on(tm.Hour,tm.Minute, tm.Second);
+        }
+        else if(ls.get_ausdimmen_aktiv())
+        {
+          ls.execute_dim_off(tm.Hour,tm.Minute, tm.Second);
+        }
+        else if((tm.Hour==ls.get_dimonSh()&&tm.Minute==ls.get_dimonSm())|| ls.get_button_ausdimmen() )
+        {
+          ls.set_dimtime(tm.Hour, tm.Minute, tm.Second);
+        } 
+      } 
+    }
+}
 
+void setTime(String t) //die übergebene Zeit wird aufgeteilt und an das RTC gesendet
+{
+  tmElements_t tms;
   String h = t.substring(0,2);
   String m = t.substring(3,5);
   String sec = t.substring(6,8);
